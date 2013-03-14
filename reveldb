@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+package RevelDB;
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
+
+use RevelDB::Server;
+
+use Getopt::Long;
+use Carp;
+use Danga::Socket;
+use IO::Socket;
+use POSIX ();
+use Scalar::Util ();
+
+my $graceful_shutdown = 0;
+
+my $sock = '/tmp/logdb.sock';
+my $path = '/tmp/logdb';
+
+Getopt::Long::GetOptions(
+    'd|daemonize' => \my $daemonize,
+    'pidfile=s'   => \my $opt_pidfile,
+    'sock|s=s'    => \$sock,
+    'port=i'      => \my $port,
+    'path|p=s'    => \$path,
+    'version'     => sub {
+        print $RevelDB::Server::VERSION."\n";
+        exit 0;
+    }
+);
+
+my $server = RevelDB::Server->new(path => $path, socket => $sock, port => $port);
+
+if ($opt_pidfile) {
+    open my $fh, '>', $opt_pidfile or die "Could not open $opt_pidfile: $!";
+    print $fh "$$\n";
+    close $fh;
+}
+
+Danga::Socket->EventLoop();
